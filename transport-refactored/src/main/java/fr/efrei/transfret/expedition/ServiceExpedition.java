@@ -1,6 +1,8 @@
 package fr.efrei.transfret.expedition;
 
+import fr.efrei.transfret.acceptation.ValidateurExpedition;
 import fr.efrei.transfret.commun.Montants;
+import fr.efrei.transfret.delai.EstimateurDelai;
 import fr.efrei.transfret.modele.Client;
 import fr.efrei.transfret.modele.Colis;
 import fr.efrei.transfret.modele.Expedition;
@@ -10,6 +12,7 @@ import fr.efrei.transfret.modele.TypeClient;
 import fr.efrei.transfret.modele.TypeMarchandise;
 import fr.efrei.transfret.notification.Notificateur;
 import fr.efrei.transfret.tarif.CalculateurPrix;
+import fr.efrei.transfret.tarif.DemandeTarif;
 import fr.efrei.transfret.vehicule.AffectationVehicule;
 import fr.efrei.transfret.vehicule.Vehicule;
 
@@ -90,7 +93,7 @@ public class ServiceExpedition {
         e.setAssurance(assurance);
         e.setStatut(StatutExpedition.CREEE);
         e.setVehicule(v);
-        e.setPrixHT(calculateur.calculerPrixHT(colis, distance.getAsInt(), mode, urgent, assurance, client.getType()));
+        e.setPrixHT(calculateur.calculerPrixHT(new DemandeTarif(colis, distance.getAsInt(), mode, urgent, assurance, client.getType())));
         e.setPrixTTC(Montants.ttc(e.getPrixHT()));
         e.setDateCreation(LocalDate.now(horloge));
         e.setDateLivraisonPrevue(e.getDateCreation().plusDays(estimateurDelai.estimerJours(distance.getAsInt(), mode, urgent)));
@@ -106,7 +109,7 @@ public class ServiceExpedition {
         if (distance.isEmpty()) {
             return OptionalDouble.empty();
         }
-        double ht = calculateur.calculerPrixHT(colis, distance.getAsInt(), mode, urgent, assurance, typeClient);
+        double ht = calculateur.calculerPrixHT(new DemandeTarif(colis, distance.getAsInt(), mode, urgent, assurance, typeClient));
         return OptionalDouble.of(Montants.ttc(ht));
     }
 

@@ -5,7 +5,6 @@ import fr.efrei.transfret.modele.Client;
 import fr.efrei.transfret.modele.Colis;
 import fr.efrei.transfret.modele.Expedition;
 import fr.efrei.transfret.modele.StatutExpedition;
-import fr.efrei.transfret.modele.TypeClient;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -33,7 +32,7 @@ public class GenerateurFacture {
         sb.append("Facture n° F-" + e.getId() + "\n");
         sb.append("Date : " + Dates.formater(LocalDate.now(horloge)) + "\n");
         sb.append("Client : " + client.getNom() + "\n");
-        if (client.getType() == TypeClient.ENTREPRISE) {
+        if (client.getType().avecSiret()) {
             sb.append("SIRET : " + client.getSiret() + "\n");
         }
         sb.append("Adresse : " + client.getAdresse() + "\n");

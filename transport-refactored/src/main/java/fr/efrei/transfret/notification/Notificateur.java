@@ -5,21 +5,24 @@ import fr.efrei.transfret.modele.Client;
 import fr.efrei.transfret.modele.Expedition;
 import fr.efrei.transfret.modele.TypeClient;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Prévient le client des événements de son compte et de ses expéditions.
  */
 public class Notificateur {
 
-    private final CanalNotification email;
-    private final CanalNotification sms;
+    private final CanalNotification canalBienvenue;
+    private final Map<TypeClient, List<CanalNotification>> canauxParType;
 
-    public Notificateur(CanalNotification email, CanalNotification sms) {
-        this.email = email;
-        this.sms = sms;
+    public Notificateur(CanalNotification canalBienvenue, Map<TypeClient, List<CanalNotification>> canauxParType) {
+        this.canalBienvenue = canalBienvenue;
+        this.canauxParType = Map.copyOf(canauxParType);
     }
 
     public void bienvenue(Client client) {
-        email.envoyer(client, new Message("Bienvenue chez TransFret",
+        canalBienvenue.envoyer(client, new Message("Bienvenue chez TransFret",
                 "Bonjour " + client.getNom() + ", votre compte " + client.getType().name().toLowerCase() + " a été créé.",
                 null));
     }
@@ -49,9 +52,8 @@ public class Notificateur {
     }
 
     private void notifier(Client client, Message message) {
-        email.envoyer(client, message);
-        if (client.getType() == TypeClient.PREMIUM) {
-            sms.envoyer(client, message);
+        for (CanalNotification canal : canauxParType.getOrDefault(client.getType(), List.of())) {
+            canal.envoyer(client, message);
         }
     }
 }
