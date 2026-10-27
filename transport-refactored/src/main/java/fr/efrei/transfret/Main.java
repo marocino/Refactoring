@@ -1,5 +1,16 @@
 package fr.efrei.transfret;
 
+import fr.efrei.transfret.client.ServiceClient;
+import fr.efrei.transfret.expedition.GenerateurFacture;
+import fr.efrei.transfret.expedition.ServiceExpedition;
+import fr.efrei.transfret.modele.Client;
+import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.Expedition;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeClient;
+import fr.efrei.transfret.modele.TypeMarchandise;
+import fr.efrei.transfret.vehicule.Flotte;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +47,7 @@ public class Main {
         System.out.println("\n----- Devis -----");
         List<Colis> palette = new ArrayList<Colis>();
         palette.add(new Colis("Palette", 800, 120, 80, 150, TypeMarchandise.STANDARD, 2000));
-        System.out.println("Paris -> Bordeaux ROUTE : " + serviceExpedition.calculerDevis(palette, "Paris", "Bordeaux", ModeTransport.ROUTE, false, false, TypeClient.PARTICULIER) + " € TTC");
+        System.out.println("Paris -> Bordeaux ROUTE : " + serviceExpedition.calculerDevis(palette, "Paris", "Bordeaux", ModeTransport.ROUTE, false, false, TypeClient.PARTICULIER).getAsDouble() + " € TTC");
 
         System.out.println("\n----- Cycle de vie -----");
         serviceExpedition.demarrerExpedition(exp1.getId());
@@ -45,7 +56,8 @@ public class Main {
         serviceExpedition.annulerExpedition(exp2.getId());
 
         System.out.println("\n----- Factures -----");
-        System.out.println(exp1.genererFacture());
-        System.out.println(exp2.genererFacture());
+        GenerateurFacture factures = new GenerateurFacture();
+        System.out.println(factures.generer(exp1));
+        System.out.println(factures.generer(exp2));
     }
 }

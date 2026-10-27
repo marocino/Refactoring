@@ -1,4 +1,8 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.vehicule;
+
+import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeMarchandise;
 
 import java.util.List;
 

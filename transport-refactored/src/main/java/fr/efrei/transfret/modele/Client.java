@@ -1,4 +1,4 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.modele;
 
 import java.util.Date;
 

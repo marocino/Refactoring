@@ -1,4 +1,4 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.notification;
 
 import java.util.ArrayList;
 import java.util.List;

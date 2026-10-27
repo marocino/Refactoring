@@ -1,4 +1,6 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.vehicule;
+
+import fr.efrei.transfret.modele.Colis;
 
 public class Bateau extends Vehicule {
 

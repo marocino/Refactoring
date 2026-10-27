@@ -1,4 +1,6 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.vehicule;
+
+import fr.efrei.transfret.modele.Colis;
 
 import java.util.ArrayList;
 import java.util.List;

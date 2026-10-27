@@ -1,4 +1,10 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.tarif;
+
+import fr.efrei.transfret.commun.Montants;
+import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeClient;
+import fr.efrei.transfret.modele.TypeMarchandise;
 
 import java.util.List;
 
@@ -79,6 +85,6 @@ public class CalculateurPrix {
         if (assurance) {
             prix = prix + Math.max(valeur * TAUX_ASSURANCE, MINIMUM_ASSURANCE);
         }
-        return Utils.arrondir(prix);
+        return Montants.arrondir(prix);
     }
 }

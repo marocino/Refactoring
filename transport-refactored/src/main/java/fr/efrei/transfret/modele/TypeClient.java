@@ -1,4 +1,4 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.modele;
 
 public enum TypeClient {
     PARTICULIER, ENTREPRISE, PREMIUM

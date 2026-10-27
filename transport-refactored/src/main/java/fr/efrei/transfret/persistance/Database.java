@@ -1,4 +1,7 @@
-package fr.efrei.transfret;
+package fr.efrei.transfret.persistance;
+
+import fr.efrei.transfret.modele.Client;
+import fr.efrei.transfret.modele.Expedition;
 
 import java.util.ArrayList;
 import java.util.HashMap;

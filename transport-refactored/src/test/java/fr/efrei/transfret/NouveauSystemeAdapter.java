@@ -1,5 +1,18 @@
 package fr.efrei.transfret;
 
+import fr.efrei.transfret.client.ServiceClient;
+import fr.efrei.transfret.expedition.GenerateurFacture;
+import fr.efrei.transfret.expedition.ServiceExpedition;
+import fr.efrei.transfret.modele.Client;
+import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.Expedition;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeClient;
+import fr.efrei.transfret.modele.TypeMarchandise;
+import fr.efrei.transfret.notification.EmailService;
+import fr.efrei.transfret.notification.SmsService;
+import fr.efrei.transfret.persistance.Database;
+import fr.efrei.transfret.vehicule.Flotte;
 import fr.efrei.transport.contrat.Canal;
 import fr.efrei.transport.contrat.ColisDto;
 import fr.efrei.transport.contrat.DemandeClient;
@@ -68,9 +81,8 @@ public class NouveauSystemeAdapter implements SystemeTransport {
 
     @Override
     public OptionalDouble devisTTC(DemandeDevis d) {
-        double devis = serviceExpedition.calculerDevis(versColis(d.colis()), d.villeDepart(), d.villeArrivee(),
+        return serviceExpedition.calculerDevis(versColis(d.colis()), d.villeDepart(), d.villeArrivee(),
                 ModeTransport.valueOf(d.mode().name()), d.urgent(), d.assurance(), TypeClient.valueOf(d.typeClient().name()));
-        return devis < 0 ? OptionalDouble.empty() : OptionalDouble.of(devis);
     }
 
     @Override
@@ -90,7 +102,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
 
     @Override
     public Optional<String> facture(String id) {
-        return Optional.ofNullable(Database.expeditions.get(id)).map(Expedition::genererFacture);
+        return Optional.ofNullable(Database.expeditions.get(id)).map(new GenerateurFacture()::generer);
     }
 
     @Override
