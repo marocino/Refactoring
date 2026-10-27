@@ -1,8 +1,7 @@
 package fr.efrei.transfret.commun;
 
-import java.time.ZoneId;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 /**
  * Format d'affichage des dates (jj/mm/aaaa).
@@ -14,10 +13,10 @@ public final class Dates {
     private Dates() {
     }
 
-    public static String formater(Date date) {
+    public static String formater(LocalDate date) {
         if (date == null) {
             return "";
         }
-        return JJ_MM_AAAA.format(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+        return JJ_MM_AAAA.format(date);
     }
 }

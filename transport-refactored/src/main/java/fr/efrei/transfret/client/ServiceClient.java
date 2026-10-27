@@ -3,7 +3,6 @@ package fr.efrei.transfret.client;
 import fr.efrei.transfret.modele.Client;
 import fr.efrei.transfret.modele.TypeClient;
 import fr.efrei.transfret.notification.Notificateur;
-import fr.efrei.transfret.persistance.Database;
 
 import java.util.Optional;
 
@@ -12,18 +11,30 @@ import java.util.Optional;
  */
 public class ServiceClient {
 
-    private ValidateurClient validateur = new ValidateurClient();
-    private Notificateur notificateur = new Notificateur();
+    private final ValidateurClient validateur;
+    private final ClientRepository clients;
+    private final Notificateur notificateur;
 
-    public Client creerClient(String nom, String email, String telephone, String adresse, TypeClient type, String siret) {
+    public ServiceClient(ValidateurClient validateur, ClientRepository clients, Notificateur notificateur) {
+        this.validateur = validateur;
+        this.clients = clients;
+        this.notificateur = notificateur;
+    }
+
+    /** @return le client créé, ou vide si les données sont invalides */
+    public Optional<Client> creerClient(String nom, String email, String telephone, String adresse, TypeClient type, String siret) {
         Optional<String> refus = validateur.verifier(nom, email, type, siret);
         if (refus.isPresent()) {
             System.out.println("ERREUR : " + refus.get());
-            return null;
+            return Optional.empty();
         }
-        Client c = new Client(nom, email, telephone, adresse, type, siret);
-        Database.getInstance().sauvegarderClient(c);
-        notificateur.bienvenue(c);
-        return c;
+        Client client = new Client(nom, email, telephone, adresse, type, siret);
+        clients.sauvegarder(client);
+        notificateur.bienvenue(client);
+        return Optional.of(client);
+    }
+
+    public Optional<Client> trouver(String email) {
+        return clients.parEmail(email);
     }
 }

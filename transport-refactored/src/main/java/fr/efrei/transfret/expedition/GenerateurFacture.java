@@ -7,7 +7,8 @@ import fr.efrei.transfret.modele.Expedition;
 import fr.efrei.transfret.modele.StatutExpedition;
 import fr.efrei.transfret.modele.TypeClient;
 
-import java.util.Date;
+import java.time.Clock;
+import java.time.LocalDate;
 
 /**
  * Met en forme la facture texte d'une expédition.
@@ -17,6 +18,12 @@ public class GenerateurFacture {
     private static final String LIGNE_DOUBLE = "==============================================\n";
     private static final String LIGNE_SIMPLE = "----------------------------------------------\n";
 
+    private final Clock horloge;
+
+    public GenerateurFacture(Clock horloge) {
+        this.horloge = horloge;
+    }
+
     public String generer(Expedition e) {
         Client client = e.getClient();
         StringBuilder sb = new StringBuilder();
@@ -24,7 +31,7 @@ public class GenerateurFacture {
         sb.append("              FACTURE TRANSFRET\n");
         sb.append(LIGNE_DOUBLE);
         sb.append("Facture n° F-" + e.getId() + "\n");
-        sb.append("Date : " + Dates.formater(new Date()) + "\n");
+        sb.append("Date : " + Dates.formater(LocalDate.now(horloge)) + "\n");
         sb.append("Client : " + client.getNom() + "\n");
         if (client.getType() == TypeClient.ENTREPRISE) {
             sb.append("SIRET : " + client.getSiret() + "\n");

@@ -10,39 +10,48 @@ import fr.efrei.transfret.modele.TypeClient;
  */
 public class Notificateur {
 
+    private final CanalNotification email;
+    private final CanalNotification sms;
+
+    public Notificateur(CanalNotification email, CanalNotification sms) {
+        this.email = email;
+        this.sms = sms;
+    }
+
     public void bienvenue(Client client) {
-        EmailService.envoyer(client.getEmail(), "Bienvenue chez TransFret",
-                "Bonjour " + client.getNom() + ", votre compte " + client.getType().name().toLowerCase() + " a été créé.");
+        email.envoyer(client, new Message("Bienvenue chez TransFret",
+                "Bonjour " + client.getNom() + ", votre compte " + client.getType().name().toLowerCase() + " a été créé.",
+                null));
     }
 
     public void expeditionCreee(Expedition e) {
-        notifier(e.getClient(), "Confirmation de votre expédition " + e.getId(),
+        notifier(e.getClient(), new Message("Confirmation de votre expédition " + e.getId(),
                 "Votre expédition " + e.getVilleDepart() + " -> " + e.getVilleArrivee() + " (" + e.getMode() + ") a été enregistrée. Montant : " + e.getPrixTTC() + " € TTC.",
-                "TransFret : expédition " + e.getId() + " créée, livraison prévue le " + Dates.formater(e.getDateLivraisonPrevue()));
+                "TransFret : expédition " + e.getId() + " créée, livraison prévue le " + Dates.formater(e.getDateLivraisonPrevue())));
     }
 
     public void expeditionPartie(Expedition e) {
-        notifier(e.getClient(), "Votre expédition " + e.getId() + " est en route",
+        notifier(e.getClient(), new Message("Votre expédition " + e.getId() + " est en route",
                 "Votre expédition a quitté " + e.getVilleDepart() + ".",
-                "TransFret : expédition " + e.getId() + " partie de " + e.getVilleDepart());
+                "TransFret : expédition " + e.getId() + " partie de " + e.getVilleDepart()));
     }
 
     public void expeditionLivree(Expedition e) {
-        notifier(e.getClient(), "Votre expédition " + e.getId() + " est livrée",
+        notifier(e.getClient(), new Message("Votre expédition " + e.getId() + " est livrée",
                 "Votre expédition est arrivée à " + e.getVilleArrivee() + ". Merci de votre confiance.",
-                "TransFret : expédition " + e.getId() + " livrée à " + e.getVilleArrivee());
+                "TransFret : expédition " + e.getId() + " livrée à " + e.getVilleArrivee()));
     }
 
     public void expeditionAnnulee(Expedition e) {
-        notifier(e.getClient(), "Annulation de votre expédition " + e.getId(),
+        notifier(e.getClient(), new Message("Annulation de votre expédition " + e.getId(),
                 "Votre expédition a été annulée. Frais d'annulation : " + e.getFraisAnnulation() + " €",
-                "TransFret : expédition " + e.getId() + " annulée");
+                "TransFret : expédition " + e.getId() + " annulée"));
     }
 
-    private void notifier(Client client, String sujet, String corps, String sms) {
-        EmailService.envoyer(client.getEmail(), sujet, corps);
+    private void notifier(Client client, Message message) {
+        email.envoyer(client, message);
         if (client.getType() == TypeClient.PREMIUM) {
-            new SmsService().envoyerSms(client.getTelephone(), sms);
+            sms.envoyer(client, message);
         }
     }
 }

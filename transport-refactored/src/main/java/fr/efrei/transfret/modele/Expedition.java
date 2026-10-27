@@ -3,7 +3,7 @@ package fr.efrei.transfret.modele;
 import fr.efrei.transfret.vehicule.Vehicule;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 public class Expedition {
@@ -18,13 +18,12 @@ public class Expedition {
     private boolean urgent;
     private boolean assurance;
     private StatutExpedition statut;
-    private Date dateCreation;
-    private Date dateLivraisonPrevue;
+    private LocalDate dateCreation;
+    private LocalDate dateLivraisonPrevue;
     private Vehicule vehicule;
     private double prixHT;
     private double prixTTC;
     private double fraisAnnulation;
-    private List<String> historique = new ArrayList<String>();
 
     public double getPoidsTotal() {
         double total = 0;
@@ -131,19 +130,19 @@ public class Expedition {
         this.statut = statut;
     }
 
-    public Date getDateCreation() {
+    public LocalDate getDateCreation() {
         return dateCreation;
     }
 
-    public void setDateCreation(Date dateCreation) {
+    public void setDateCreation(LocalDate dateCreation) {
         this.dateCreation = dateCreation;
     }
 
-    public Date getDateLivraisonPrevue() {
+    public LocalDate getDateLivraisonPrevue() {
         return dateLivraisonPrevue;
     }
 
-    public void setDateLivraisonPrevue(Date dateLivraisonPrevue) {
+    public void setDateLivraisonPrevue(LocalDate dateLivraisonPrevue) {
         this.dateLivraisonPrevue = dateLivraisonPrevue;
     }
 
@@ -177,9 +176,5 @@ public class Expedition {
 
     public void setFraisAnnulation(double fraisAnnulation) {
         this.fraisAnnulation = fraisAnnulation;
-    }
-
-    public List<String> getHistorique() {
-        return historique;
     }
 }

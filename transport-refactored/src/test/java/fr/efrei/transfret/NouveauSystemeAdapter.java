@@ -1,18 +1,11 @@
 package fr.efrei.transfret;
 
-import fr.efrei.transfret.client.ServiceClient;
-import fr.efrei.transfret.expedition.GenerateurFacture;
-import fr.efrei.transfret.expedition.ServiceExpedition;
-import fr.efrei.transfret.modele.Client;
 import fr.efrei.transfret.modele.Colis;
 import fr.efrei.transfret.modele.Expedition;
 import fr.efrei.transfret.modele.ModeTransport;
 import fr.efrei.transfret.modele.TypeClient;
 import fr.efrei.transfret.modele.TypeMarchandise;
-import fr.efrei.transfret.notification.EmailService;
-import fr.efrei.transfret.notification.SmsService;
-import fr.efrei.transfret.persistance.Database;
-import fr.efrei.transfret.vehicule.Flotte;
+import fr.efrei.transfret.notification.Envoi;
 import fr.efrei.transport.contrat.Canal;
 import fr.efrei.transport.contrat.ColisDto;
 import fr.efrei.transport.contrat.DemandeClient;
@@ -23,110 +16,102 @@ import fr.efrei.transport.contrat.Notification;
 import fr.efrei.transport.contrat.Statut;
 import fr.efrei.transport.contrat.SystemeTransport;
 
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.stream.Collectors;
 
 /**
- * Branche le nouveau code sur les tests de contrat.
+ * Branche le nouveau code sur les tests de contrat : ne fait que traduire les types du contrat.
  */
 public class NouveauSystemeAdapter implements SystemeTransport {
 
-    private ServiceClient serviceClient;
-    private ServiceExpedition serviceExpedition;
+    private TransFret application;
 
     @Override
     public void reinitialiser() {
-        Database.getInstance();
-        Database.expeditions.clear();
-        Database.clients.clear();
-        EmailService.journal.clear();
-        SmsService.journal.clear();
-        ServiceExpedition.compteur = 0;
-        Flotte.initialiser();
-        serviceClient = new ServiceClient();
-        serviceExpedition = new ServiceExpedition();
+        application = new TransFret();
     }
 
     @Override
     public Optional<String> creerClient(DemandeClient d) {
-        Client client = serviceClient.creerClient(d.nom(), d.email(), d.telephone(), d.adresse(),
-                TypeClient.valueOf(d.type().name()), d.siret());
-        return Optional.ofNullable(client).map(Client::getEmail);
+        return application.serviceClient()
+                .creerClient(d.nom(), d.email(), d.telephone(), d.adresse(), versTypeClient(d.type()), d.siret())
+                .map(client -> client.getEmail());
     }
 
     @Override
     public Optional<String> creerExpedition(DemandeExpedition d) {
-        Client client = Database.clients.get(d.refClient());
-        Expedition expedition = serviceExpedition.creerExpedition(client, versColis(d.colis()), d.villeDepart(),
-                d.villeArrivee(), ModeTransport.valueOf(d.mode().name()), d.urgent(), d.assurance());
-        return Optional.ofNullable(expedition).map(Expedition::getId);
+        return application.serviceClient().trouver(d.refClient())
+                .flatMap(client -> application.serviceExpedition().creerExpedition(client, versColis(d.colis()),
+                        d.villeDepart(), d.villeArrivee(), versMode(d.mode()), d.urgent(), d.assurance()))
+                .map(Expedition::getId);
     }
 
     @Override
     public Optional<EtatExpedition> consulter(String id) {
-        Expedition e = Database.expeditions.get(id);
-        if (e == null) {
-            return Optional.empty();
-        }
-        int delai = (int) ChronoUnit.DAYS.between(jour(e.getDateCreation()), jour(e.getDateLivraisonPrevue()));
-        return Optional.of(new EtatExpedition(e.getId(), Statut.valueOf(e.getStatut().name()), e.getPrixHT(), e.getPrixTTC(),
-                delai, e.getVehicule().getImmatriculation(), e.getFraisAnnulation()));
+        return application.serviceExpedition().consulter(id).map(NouveauSystemeAdapter::versEtat);
     }
 
     @Override
     public OptionalDouble devisTTC(DemandeDevis d) {
-        return serviceExpedition.calculerDevis(versColis(d.colis()), d.villeDepart(), d.villeArrivee(),
-                ModeTransport.valueOf(d.mode().name()), d.urgent(), d.assurance(), TypeClient.valueOf(d.typeClient().name()));
+        return application.serviceExpedition().calculerDevis(versColis(d.colis()), d.villeDepart(), d.villeArrivee(),
+                versMode(d.mode()), d.urgent(), d.assurance(), versTypeClient(d.typeClient()));
     }
 
     @Override
     public boolean demarrer(String id) {
-        return serviceExpedition.demarrerExpedition(id);
+        return application.serviceExpedition().demarrerExpedition(id);
     }
 
     @Override
     public boolean livrer(String id) {
-        return serviceExpedition.livrerExpedition(id);
+        return application.serviceExpedition().livrerExpedition(id);
     }
 
     @Override
     public boolean annuler(String id) {
-        return serviceExpedition.annulerExpedition(id);
+        return application.serviceExpedition().annulerExpedition(id);
     }
 
     @Override
     public Optional<String> facture(String id) {
-        return Optional.ofNullable(Database.expeditions.get(id)).map(new GenerateurFacture()::generer);
+        return application.serviceExpedition().consulter(id).map(application.generateurFacture()::generer);
     }
 
     @Override
     public List<Notification> notifications() {
         List<Notification> notifications = new ArrayList<>();
-        for (String[] email : EmailService.journal) {
-            notifications.add(new Notification(Canal.EMAIL, email[0], email[1]));
+        for (Envoi email : application.emails().envois()) {
+            notifications.add(new Notification(Canal.EMAIL, email.destinataire(), email.objet()));
         }
-        for (String[] sms : SmsService.journal) {
-            notifications.add(new Notification(Canal.SMS, sms[0], sms[1]));
+        for (Envoi sms : application.sms().envois()) {
+            notifications.add(new Notification(Canal.SMS, sms.destinataire(), sms.objet()));
         }
         return notifications;
     }
 
-    private static java.time.LocalDate jour(Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    private static EtatExpedition versEtat(Expedition e) {
+        int delai = (int) ChronoUnit.DAYS.between(e.getDateCreation(), e.getDateLivraisonPrevue());
+        return new EtatExpedition(e.getId(), Statut.valueOf(e.getStatut().name()), e.getPrixHT(), e.getPrixTTC(),
+                delai, e.getVehicule().getImmatriculation(), e.getFraisAnnulation());
     }
 
     private static List<Colis> versColis(List<ColisDto> colis) {
-        return colis.stream().map(NouveauSystemeAdapter::versColis).collect(Collectors.toCollection(ArrayList::new));
+        return colis.stream().map(NouveauSystemeAdapter::versColis).toList();
     }
 
     private static Colis versColis(ColisDto c) {
         return new Colis(c.description(), c.poidsKg(), c.longueurCm(), c.largeurCm(), c.hauteurCm(),
                 TypeMarchandise.valueOf(c.type().name()), c.valeurDeclaree());
+    }
+
+    private static ModeTransport versMode(fr.efrei.transport.contrat.ModeTransport mode) {
+        return ModeTransport.valueOf(mode.name());
+    }
+
+    private static TypeClient versTypeClient(fr.efrei.transport.contrat.TypeClient type) {
+        return TypeClient.valueOf(type.name());
     }
 }
