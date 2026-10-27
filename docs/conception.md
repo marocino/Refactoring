@@ -39,3 +39,23 @@ enum ModeTransport {
 
 L'enum ne garde que des **données** intrinsèques (le libellé d'un type de marchandise, le fait qu'un type de
 client soit identifié par un SIRET), pas de comportement.
+
+## Étape 6 : Decorator : la chaîne de prix
+
+```
+Assurance( Remise( SupplementUrgence( SupplementRefrigere( SupplementDangereux( SupplementFragile( TarifParMode ) ) ) ) ) )
+```
+
+- `ComposantPrix` : interface commune (`double calculer(DemandeTarif)`) ;
+- `TarifParMode` : composant de base, délègue à la stratégie `TarifTransport` du mode ;
+- `DecorateurPrix` : décorateur abstrait (méthode `calculer` finale = calcul enveloppé puis `ajuster`) ;
+- `SupplementMarchandise` factorise les suppléments « au moins un colis de tel type » : `SupplementFragile`,
+  `SupplementDangereux`, `SupplementRefrigere` ;
+- `SupplementUrgence`, `Assurance` ;
+- `Remise` est un décorateur qui délègue à la stratégie `PolitiqueRemise` de l'étape 5 ;
+- `AssemblageTarif` est le **seul** endroit qui connaît l'ordre des couches ; `CalculateurPrix` ne fait plus
+  qu'arrondir le résultat de la chaîne.
+
+Chaque décorateur décide lui-même s'il s'applique (`demande.contient(type)`, `demande.urgent()`…) : la chaîne est
+construite une seule fois au démarrage et l'assemblage reste une simple liste ordonnée, sans `if`.
+`AssemblageTarifTest` vérifie l'ordre (remise après urgence, assurance après remise).

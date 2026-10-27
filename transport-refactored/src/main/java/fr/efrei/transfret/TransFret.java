@@ -26,6 +26,7 @@ import fr.efrei.transfret.notification.Notificateur;
 import fr.efrei.transfret.notification.SmsConsole;
 import fr.efrei.transfret.persistance.ClientRepositoryEnMemoire;
 import fr.efrei.transfret.persistance.ExpeditionRepositoryEnMemoire;
+import fr.efrei.transfret.tarif.AssemblageTarif;
 import fr.efrei.transfret.tarif.CalculateurPrix;
 import fr.efrei.transfret.tarif.TarifAir;
 import fr.efrei.transfret.tarif.TarifMer;
@@ -73,7 +74,7 @@ public class TransFret {
                 new ValidateurExpedition(reglesAcceptation()),
                 tableDistances(),
                 new AffectationVehicule(flotte()),
-                new CalculateurPrix(tarifs(), remises()),
+                new CalculateurPrix(AssemblageTarif.chaine(tarifs(), remises())),
                 new EstimateurDelai(delais()),
                 new GenerateurIdentifiant(new Random()),
                 new ExpeditionRepositoryEnMemoire(),
