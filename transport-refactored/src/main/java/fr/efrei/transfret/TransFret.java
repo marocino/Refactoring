@@ -8,6 +8,7 @@ import fr.efrei.transfret.acceptation.ValidateurExpedition;
 import fr.efrei.transfret.client.ServiceClient;
 import fr.efrei.transfret.client.ValidateurClient;
 import fr.efrei.transfret.delai.DelaiAir;
+import fr.efrei.transfret.delai.DelaiFluvial;
 import fr.efrei.transfret.delai.DelaiMer;
 import fr.efrei.transfret.delai.DelaiRail;
 import fr.efrei.transfret.delai.DelaiRoute;
@@ -28,7 +29,9 @@ import fr.efrei.transfret.persistance.ClientRepositoryEnMemoire;
 import fr.efrei.transfret.persistance.ExpeditionRepositoryEnMemoire;
 import fr.efrei.transfret.tarif.AssemblageTarif;
 import fr.efrei.transfret.tarif.CalculateurPrix;
+import fr.efrei.transfret.tarif.ComposantPrix;
 import fr.efrei.transfret.tarif.TarifAir;
+import fr.efrei.transfret.tarif.TarifFluvial;
 import fr.efrei.transfret.tarif.TarifMer;
 import fr.efrei.transfret.tarif.TarifRail;
 import fr.efrei.transfret.tarif.TarifRoute;
@@ -37,12 +40,17 @@ import fr.efrei.transfret.tarif.remise.AucuneRemise;
 import fr.efrei.transfret.tarif.remise.PolitiqueRemise;
 import fr.efrei.transfret.tarif.remise.RemiseEntreprise;
 import fr.efrei.transfret.tarif.remise.RemisePremium;
+import fr.efrei.transfret.tarif.supplement.SupplementDangereux;
+import fr.efrei.transfret.tarif.supplement.SupplementFragile;
+import fr.efrei.transfret.tarif.supplement.SupplementHorsGabarit;
+import fr.efrei.transfret.tarif.supplement.SupplementRefrigere;
 import fr.efrei.transfret.vehicule.AffectationVehicule;
 import fr.efrei.transfret.vehicule.Avion;
 import fr.efrei.transfret.vehicule.BateauFrigorifique;
 import fr.efrei.transfret.vehicule.Camion;
 import fr.efrei.transfret.vehicule.CamionFrigorifique;
 import fr.efrei.transfret.vehicule.Flotte;
+import fr.efrei.transfret.vehicule.Peniche;
 import fr.efrei.transfret.vehicule.Train;
 
 import java.time.Clock;
@@ -50,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * Racine de composition : le seul endroit qui construit le graphe d'objets de l'application.
@@ -57,24 +66,46 @@ import java.util.Set;
  */
 public class TransFret {
 
+    /** Suppléments marchandise de la grille tarifaire décrite par les tests de contrat, dans l'ordre d'application. */
+    private static final List<UnaryOperator<ComposantPrix>> SUPPLEMENTS_HISTORIQUES = List.of(
+            SupplementFragile::new,
+            SupplementDangereux::new,
+            SupplementRefrigere::new);
+
+    /** Suppléments marchandise en vigueur : la grille historique, plus le supplément hors gabarit. */
+    private static final List<UnaryOperator<ComposantPrix>> SUPPLEMENTS_EN_VIGUEUR = List.of(
+            SupplementFragile::new,
+            SupplementDangereux::new,
+            SupplementRefrigere::new,
+            SupplementHorsGabarit::new);
+
     private final EmailConsole emails = new EmailConsole();
     private final SmsConsole sms = new SmsConsole();
     private final ServiceClient serviceClient;
     private final ServiceExpedition serviceExpedition;
     private final GenerateurFacture generateurFacture;
 
+    /** L'application avec la grille tarifaire en vigueur. */
     public TransFret() {
-        this(Clock.systemDefaultZone());
+        this(Clock.systemDefaultZone(), SUPPLEMENTS_EN_VIGUEUR);
     }
 
-    public TransFret(Clock horloge) {
+    /**
+     * L'application avec la grille tarifaire d'avant le supplément hors gabarit, celle que décrivent les tests
+     * de contrat (plusieurs colis du jeu d'essai dépassent 2 m).
+     */
+    public static TransFret avecGrilleHistorique() {
+        return new TransFret(Clock.systemDefaultZone(), SUPPLEMENTS_HISTORIQUES);
+    }
+
+    private TransFret(Clock horloge, List<UnaryOperator<ComposantPrix>> supplements) {
         Notificateur notificateur = new Notificateur(emails, canauxParTypeClient());
         serviceClient = new ServiceClient(new ValidateurClient(), new ClientRepositoryEnMemoire(), notificateur);
         serviceExpedition = new ServiceExpedition(
                 new ValidateurExpedition(reglesAcceptation()),
                 tableDistances(),
                 new AffectationVehicule(flotte()),
-                new CalculateurPrix(AssemblageTarif.chaine(tarifs(), remises())),
+                new CalculateurPrix(AssemblageTarif.chaine(tarifs(), supplements, remises())),
                 new EstimateurDelai(delais()),
                 new GenerateurIdentifiant(new Random()),
                 new ExpeditionRepositoryEnMemoire(),
@@ -94,7 +125,7 @@ public class TransFret {
         return List.of(
                 new MarchandiseInterdite(TypeMarchandise.DANGEREUX, Set.of(ModeTransport.AIR)),
                 new MarchandiseReservee(TypeMarchandise.REFRIGERE, Set.of(ModeTransport.ROUTE, ModeTransport.MER)),
-                new UrgenceInterdite(Set.of(ModeTransport.MER)));
+                new UrgenceInterdite(Set.of(ModeTransport.MER, ModeTransport.FLUVIAL)));
     }
 
     private static Map<ModeTransport, TarifTransport> tarifs() {
@@ -102,7 +133,8 @@ public class TransFret {
                 ModeTransport.ROUTE, new TarifRoute(),
                 ModeTransport.RAIL, new TarifRail(),
                 ModeTransport.MER, new TarifMer(),
-                ModeTransport.AIR, new TarifAir());
+                ModeTransport.AIR, new TarifAir(),
+                ModeTransport.FLUVIAL, new TarifFluvial());
     }
 
     private static Map<TypeClient, PolitiqueRemise> remises() {
@@ -117,7 +149,8 @@ public class TransFret {
                 ModeTransport.ROUTE, new DelaiRoute(),
                 ModeTransport.RAIL, new DelaiRail(),
                 ModeTransport.MER, new DelaiMer(),
-                ModeTransport.AIR, new DelaiAir());
+                ModeTransport.AIR, new DelaiAir(),
+                ModeTransport.FLUVIAL, new DelaiFluvial());
     }
 
     private static Flotte flotte() {
@@ -127,7 +160,8 @@ public class TransFret {
                 new CamionFrigorifique("IJ-789-KL", 8000),
                 new Train("TR-0001", 600000),
                 new BateauFrigorifique("CMA-CGM-01", 20000000),
-                new Avion("F-GTXA", 100000)));
+                new Avion("F-GTXA", 100000),
+                new Peniche("PEN-0001", 2500000)));
     }
 
     private static TableDistances tableDistances() {
@@ -139,7 +173,8 @@ public class TransFret {
                 .ajouter("Lyon", "Marseille", 315)
                 .ajouter("Le Havre", "New York", 5850)
                 .ajouter("Marseille", "Alger", 760)
-                .ajouter("Paris", "New York", 5840);
+                .ajouter("Paris", "New York", 5840)
+                .ajouter("Paris", "Le Havre", 365);
     }
 
     public ServiceClient serviceClient() {

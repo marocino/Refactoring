@@ -5,8 +5,11 @@ import fr.efrei.transfret.modele.TypeClient;
 import fr.efrei.transfret.modele.TypeMarchandise;
 import fr.efrei.transfret.tarif.remise.AucuneRemise;
 import fr.efrei.transfret.tarif.remise.RemiseEntreprise;
+import fr.efrei.transfret.tarif.supplement.SupplementDangereux;
+import fr.efrei.transfret.tarif.supplement.SupplementFragile;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static fr.efrei.transfret.tarif.Demandes.colis;
@@ -17,6 +20,7 @@ class AssemblageTarifTest {
 
     private final ComposantPrix chaine = AssemblageTarif.chaine(
             Map.of(ModeTransport.ROUTE, demande -> 4000.0),
+            List.of(SupplementFragile::new, SupplementDangereux::new),
             Map.of(TypeClient.PARTICULIER, new AucuneRemise(), TypeClient.ENTREPRISE, new RemiseEntreprise()));
 
     @Test

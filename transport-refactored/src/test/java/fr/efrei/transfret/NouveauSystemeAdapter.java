@@ -31,7 +31,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
 
     @Override
     public void reinitialiser() {
-        application = new TransFret();
+        application = TransFret.avecGrilleHistorique();
     }
 
     @Override

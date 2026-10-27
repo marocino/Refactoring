@@ -123,3 +123,11 @@ CREEE ──démarrer──▶ EN_COURS ──livrer──▶ LIVREE
   └──annuler──▶ ANNULEE ◀──annuler (frais : 50 % du TTC)
 ```
 Chaque étape envoie un email au client, plus un SMS pour les clients PREMIUM.
+
+## Rendu
+
+Le refactoring est fait étape par étape dans `transport-refactored`, un commit par étape (`git log`) :
+
+- [Diagnostic (étape 1)](docs/diagnostic.md)
+- [Choix de conception (étapes 5 à 7)](docs/conception.md)
+- [Preuve par l'extension et bilan (étape 8)](docs/bilan.md)
