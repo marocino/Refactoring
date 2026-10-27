@@ -2,10 +2,13 @@ package fr.efrei.transfret.vehicule;
 
 import fr.efrei.transfret.modele.Colis;
 import fr.efrei.transfret.modele.ModeTransport;
-import fr.efrei.transfret.modele.TypeMarchandise;
 
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * Choisit le véhicule d'une expédition : le premier de la flotte qui peut la prendre en charge.
+ */
 public class AffectationVehicule {
 
     private final Flotte flotte;
@@ -14,53 +17,9 @@ public class AffectationVehicule {
         this.flotte = flotte;
     }
 
-    // retourne le premier véhicule disponible et compatible, null si aucun
-    public Vehicule trouverVehicule(List<Colis> colis, ModeTransport mode) {
-        double poids = 0;
-        boolean dangereux = false;
-        boolean refrigere = false;
-        for (Colis c : colis) {
-            poids = poids + c.getPoids();
-            if (c.estDeType(TypeMarchandise.DANGEREUX)) dangereux = true;
-            if (c.estDeType(TypeMarchandise.REFRIGERE)) refrigere = true;
-        }
-        for (Vehicule v : flotte.vehicules()) {
-            if (!v.estDisponible()) continue;
-            if (v.getCapaciteMax() - v.getChargeActuelle() < poids) continue;
-            if (mode == ModeTransport.ROUTE) {
-                if (v instanceof Camion) {
-                    if (refrigere) {
-                        if (v instanceof CamionFrigorifique) {
-                            return v;
-                        }
-                    } else if (v instanceof CamionFrigorifique) {
-                        // ne pas prendre le frigo pour autre chose, sinon ça plante au chargement
-                        continue;
-                    } else if (dangereux) {
-                        if (v.peutTransporterMatieresDangereuses()) {
-                            return v;
-                        }
-                    } else {
-                        return v;
-                    }
-                }
-            } else if (mode == ModeTransport.RAIL) {
-                if (v instanceof Train) {
-                    return v;
-                }
-            } else if (mode == ModeTransport.MER) {
-                if (v instanceof Bateau) {
-                    if (refrigere && !((Bateau) v).aConteneursRefrigeres()) {
-                        continue;
-                    }
-                    return v;
-                }
-            } else if (mode == ModeTransport.AIR) {
-                if (v instanceof Avion) {
-                    return v;
-                }
-            }
-        }
-        return null;
+    public Optional<Vehicule> trouverVehicule(List<Colis> colis, ModeTransport mode) {
+        return flotte.vehicules().stream()
+                .filter(v -> v.peutPrendreEnCharge(colis, mode))
+                .findFirst();
     }
 }

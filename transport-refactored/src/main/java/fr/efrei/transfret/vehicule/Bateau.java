@@ -1,40 +1,36 @@
 package fr.efrei.transfret.vehicule;
 
 import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeMarchandise;
 
-public class Bateau extends Vehicule {
+import java.util.List;
 
-    private boolean conteneursRefrigeres;
+/**
+ * Navire de commerce, sans conteneurs frigorifiques.
+ */
+public class Bateau extends Vehicule implements Ravitaillable {
 
-    public Bateau(String immatriculation, double capaciteMax, boolean conteneursRefrigeres) {
-        super(immatriculation, capaciteMax);
-        this.conteneursRefrigeres = conteneursRefrigeres;
+    private static final double KM_PAR_MILLE_NAUTIQUE = 1.852;
+
+    public Bateau(String immatriculation, double capaciteMax) {
+        super(immatriculation, capaciteMax, ModeTransport.MER);
     }
 
-    public void rouler(int km) {
-        throw new UnsupportedOperationException("Un bateau ne roule pas");
+    @Override
+    protected boolean accepte(List<Colis> colis) {
+        return !contient(colis, TypeMarchandise.REFRIGERE);
     }
 
-    public void naviguer(int milesNautiques) {
-        System.out.println("Le navire " + immatriculation + " navigue sur " + milesNautiques + " milles nautiques");
+    @Override
+    public void partir(int distanceKm) {
+        faireLePlein();
+        int milles = (int) (distanceKm / KM_PAR_MILLE_NAUTIQUE);
+        System.out.println("Le navire " + getImmatriculation() + " navigue sur " + milles + " milles nautiques");
     }
 
-    public void voler(int altitude) {
-        throw new UnsupportedOperationException("Un bateau ne vole pas");
-    }
-
-    public void activerRefrigeration(double temperature) {
-        if (!conteneursRefrigeres) {
-            throw new UnsupportedOperationException("Pas de conteneurs frigorifiques sur ce navire");
-        }
-        System.out.println("Conteneurs frigorifiques réglés à " + temperature + "°C");
-    }
-
-    public boolean peutTransporterMatieresDangereuses() {
-        return true;
-    }
-
-    public boolean aConteneursRefrigeres() {
-        return conteneursRefrigeres;
+    @Override
+    public void faireLePlein() {
+        System.out.println("Plein effectué pour " + getImmatriculation());
     }
 }

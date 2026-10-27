@@ -1,42 +1,48 @@
 package fr.efrei.transfret.vehicule;
 
 import fr.efrei.transfret.modele.Colis;
+import fr.efrei.transfret.modele.ModeTransport;
+import fr.efrei.transfret.modele.TypeMarchandise;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Vehicule implements IVehicule {
+/**
+ * Véhicule de la flotte : il transporte des colis sur un mode de transport donné.
+ * <p>
+ * Chaque véhicule dit lui-même quelles marchandises il accepte ({@link #accepte}) et comment il part
+ * ({@link #partir}) : aucune sous-classe ne refuse ce que la classe de base promet.
+ */
+public abstract class Vehicule {
 
-    protected String immatriculation;
-    protected double capaciteMax;
-    protected double chargeActuelle;
-    protected boolean disponible = true;
-    protected List<Colis> chargement = new ArrayList<Colis>();
+    protected static final double TEMPERATURE_REFRIGERATION = 4;
 
-    public Vehicule(String immatriculation, double capaciteMax) {
+    private final String immatriculation;
+    private final double capaciteMax;
+    private final ModeTransport mode;
+    private final List<Colis> chargement = new ArrayList<>();
+    private double chargeActuelle;
+    private boolean disponible = true;
+
+    protected Vehicule(String immatriculation, double capaciteMax, ModeTransport mode) {
         this.immatriculation = immatriculation;
         this.capaciteMax = capaciteMax;
+        this.mode = mode;
     }
 
-    public String getImmatriculation() {
-        return immatriculation;
+    /** Le véhicule est libre, dessert ce mode, a la place pour ces colis et sait les transporter. */
+    public boolean peutPrendreEnCharge(List<Colis> colis, ModeTransport modeDemande) {
+        return disponible
+                && capaciteMax - chargeActuelle >= poids(colis)
+                && mode == modeDemande
+                && accepte(colis);
     }
 
-    public double getCapaciteMax() {
-        return capaciteMax;
-    }
+    /** Le véhicule est équipé pour ces marchandises (réfrigération, certification…). */
+    protected abstract boolean accepte(List<Colis> colis);
 
-    public double getChargeActuelle() {
-        return chargeActuelle;
-    }
-
-    public boolean estDisponible() {
-        return disponible;
-    }
-
-    public void setDisponible(boolean disponible) {
-        this.disponible = disponible;
-    }
+    /** Prépare le véhicule et le fait partir pour un trajet de la distance donnée. */
+    public abstract void partir(int distanceKm);
 
     public void charger(Colis colis) {
         if (chargeActuelle + colis.getPoids() > capaciteMax) {
@@ -53,7 +59,43 @@ public abstract class Vehicule implements IVehicule {
         }
     }
 
-    public void faireLePlein() {
-        System.out.println("Plein effectué pour " + immatriculation);
+    public void immobiliser() {
+        disponible = false;
+    }
+
+    public void liberer() {
+        disponible = true;
+    }
+
+    public boolean estDisponible() {
+        return disponible;
+    }
+
+    public String getImmatriculation() {
+        return immatriculation;
+    }
+
+    public double getCapaciteMax() {
+        return capaciteMax;
+    }
+
+    public double getChargeActuelle() {
+        return chargeActuelle;
+    }
+
+    protected boolean transporte(TypeMarchandise type) {
+        return contient(chargement, type);
+    }
+
+    protected static boolean contient(List<Colis> colis, TypeMarchandise type) {
+        return colis.stream().anyMatch(c -> c.estDeType(type));
+    }
+
+    private static double poids(List<Colis> colis) {
+        double total = 0;
+        for (Colis c : colis) {
+            total = total + c.getPoids();
+        }
+        return total;
     }
 }

@@ -39,7 +39,7 @@ import fr.efrei.transfret.tarif.remise.RemiseEntreprise;
 import fr.efrei.transfret.tarif.remise.RemisePremium;
 import fr.efrei.transfret.vehicule.AffectationVehicule;
 import fr.efrei.transfret.vehicule.Avion;
-import fr.efrei.transfret.vehicule.Bateau;
+import fr.efrei.transfret.vehicule.BateauFrigorifique;
 import fr.efrei.transfret.vehicule.Camion;
 import fr.efrei.transfret.vehicule.CamionFrigorifique;
 import fr.efrei.transfret.vehicule.Flotte;
@@ -126,7 +126,7 @@ public class TransFret {
                 new Camion("EF-456-GH", 12000, true),
                 new CamionFrigorifique("IJ-789-KL", 8000),
                 new Train("TR-0001", 600000),
-                new Bateau("CMA-CGM-01", 20000000, true),
+                new BateauFrigorifique("CMA-CGM-01", 20000000),
                 new Avion("F-GTXA", 100000)));
     }
 

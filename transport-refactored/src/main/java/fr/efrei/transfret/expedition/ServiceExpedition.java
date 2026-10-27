@@ -9,7 +9,6 @@ import fr.efrei.transfret.modele.Expedition;
 import fr.efrei.transfret.modele.ModeTransport;
 import fr.efrei.transfret.modele.StatutExpedition;
 import fr.efrei.transfret.modele.TypeClient;
-import fr.efrei.transfret.modele.TypeMarchandise;
 import fr.efrei.transfret.notification.Notificateur;
 import fr.efrei.transfret.tarif.CalculateurPrix;
 import fr.efrei.transfret.tarif.DemandeTarif;
@@ -29,11 +28,6 @@ import java.util.OptionalInt;
 public class ServiceExpedition {
 
     private static final double TAUX_FRAIS_ANNULATION = 0.5;
-
-    private static final double KM_PAR_MILLE_NAUTIQUE = 1.852;
-    private static final int ROULAGE_PISTE_KM = 2;
-    private static final int ALTITUDE_CROISIERE_PIEDS = 35000;
-    private static final double TEMPERATURE_REFRIGERATION = 4;
 
     private final ValidateurExpedition validateur;
     private final TableDistances distances;
@@ -72,11 +66,12 @@ public class ServiceExpedition {
             return Optional.empty();
         }
 
-        Vehicule v = affectation.trouverVehicule(colis, mode);
-        if (v == null) {
+        Optional<Vehicule> vehicule = affectation.trouverVehicule(colis, mode);
+        if (vehicule.isEmpty()) {
             System.out.println("ERREUR : aucun véhicule disponible pour cette expédition");
             return Optional.empty();
         }
+        Vehicule v = vehicule.get();
         for (Colis c : colis) {
             v.charger(c);
         }
@@ -124,26 +119,8 @@ public class ServiceExpedition {
             return false;
         }
         e.setStatut(StatutExpedition.EN_COURS);
-        Vehicule v = e.getVehicule();
-        v.setDisponible(false);
-        try {
-            v.faireLePlein();
-        } catch (Exception ex) {
-        }
-        switch (e.getMode()) {
-            case ROUTE, RAIL -> v.rouler(e.getDistance());
-            case MER -> v.naviguer((int) (e.getDistance() / KM_PAR_MILLE_NAUTIQUE));
-            case AIR -> {
-                v.rouler(ROULAGE_PISTE_KM);
-                v.voler(ALTITUDE_CROISIERE_PIEDS);
-            }
-        }
-        for (Colis c : e.getColis()) {
-            if (c.estDeType(TypeMarchandise.REFRIGERE)) {
-                v.activerRefrigeration(TEMPERATURE_REFRIGERATION);
-                break;
-            }
-        }
+        e.getVehicule().immobiliser();
+        e.getVehicule().partir(e.getDistance());
         expeditions.mettreAJour(e);
         notificateur.expeditionPartie(e);
         return true;
@@ -183,6 +160,6 @@ public class ServiceExpedition {
         for (Colis c : e.getColis()) {
             e.getVehicule().decharger(c);
         }
-        e.getVehicule().setDisponible(true);
+        e.getVehicule().liberer();
     }
 }

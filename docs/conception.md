@@ -34,7 +34,7 @@ enum ModeTransport {
 - ✅ la configuration (quel tarif pour quel mode) est faite à **un seul endroit**, la racine de composition
   `TransFret` ;
 - ✅ les tests unitaires injectent des stratégies factices (`EstimateurDelaiTest`) ;
-- ❌ un mode sans stratégie n'est détecté qu'à l'exécution : `CalculateurPrix` et `EstimateurDelai` lèvent
+- ❌ un mode sans stratégie n'est détecté qu'à l'exécution : `TarifParMode`, `Remise` et `EstimateurDelai` lèvent
   alors une `IllegalArgumentException` explicite.
 
 L'enum ne garde que des **données** intrinsèques (le libellé d'un type de marchandise, le fait qu'un type de
@@ -59,3 +59,22 @@ Assurance( Remise( SupplementUrgence( SupplementRefrigere( SupplementDangereux( 
 Chaque décorateur décide lui-même s'il s'applique (`demande.contient(type)`, `demande.urgent()`…) : la chaîne est
 construite une seule fois au démarrage et l'assemblage reste une simple liste ordonnée, sans `if`.
 `AssemblageTarifTest` vérifie l'ordre (remise après urgence, assurance après remise).
+
+## Étape 7 : Véhicules : Liskov et ségrégation des interfaces
+
+| Avant | Après |
+|---|---|
+| `IVehicule` impose `rouler`, `naviguer`, `voler`, `activerRefrigeration`, `faireLePlein` à tous | `IVehicule` supprimée ; petites interfaces de rôle `Ravitaillable` (camions, navires, avion) et `Refrigerant` (camion frigorifique, navire frigorifique) |
+| `CamionFrigorifique.charger()` lève une exception pour un colis non réfrigéré | `charger()` ne refuse jamais ; chaque véhicule déclare ce qu'il accepte via `accepte(colis)`, consulté **avant** l'affectation |
+| `Train.faireLePlein()` lève une exception, masquée par un `catch` vide | `Train` n'implémente pas `Ravitaillable` : il n'a rien à cacher |
+| `AffectationVehicule` : cascade d'`instanceof` | `vehicule.peutPrendreEnCharge(colis, mode)` puis `findFirst()` sur la flotte |
+| `demarrerExpedition` : `switch` sur le mode pour appeler `rouler` / `naviguer` / `voler` | `vehicule.partir(distance)`, chaque véhicule part à sa façon (plein, roulage, réfrigération…) |
+| `Bateau(…, conteneursRefrigeres)` avec un booléen et un `if` | `Bateau` et `BateauFrigorifique` (qui accepte **plus** que sa classe mère : Liskov respecté) |
+
+`CamionFrigorifique` n'hérite plus de `Camion` : il ne peut pas tenir la promesse « je transporte les colis
+standard » de sa classe mère. Les deux héritent de `Vehicule`.
+
+**Seul écart de comportement assumé** : avec l'ancien code, une expédition routière mêlant colis réfrigérés et
+non réfrigérés était affectée au camion frigorifique puis faisait planter le chargement
+(`IllegalArgumentException`). Elle est désormais simplement refusée (aucun véhicule compatible), conformément à la
+règle « le camion frigorifique ne transporte que du réfrigéré ». Aucun test de contrat ne couvre ce cas.
